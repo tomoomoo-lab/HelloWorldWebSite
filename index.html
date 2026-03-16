@@ -1,6 +1,882 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bangkok Home Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161820;
+    --surface2: #1e2028;
+    --surface3: #252830;
+    --border: rgba(255,255,255,0.07);
+    --text: #f0f2f7;
+    --muted: #7a7f94;
+    --accent: #4f8ef7;
+    --gold: #f0b429;
+    --green: #34d399;
+    --red: #f87171;
+    --orange: #fb923c;
+    --yellow: #facc15;
+    --aqi-good: #34d399;
+    --aqi-mod: #facc15;
+    --aqi-sens: #fb923c;
+    --aqi-unhealthy: #f87171;
+    --aqi-very: #c084fc;
+    --aqi-haz: #ef4444;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .header .sub {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; } 50% { opacity:.3; }
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  /* WEATHER BIG */
+  .weather-main {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+  }
+  .weather-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .temp-big {
+    font-size: 72px;
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .temp-big sup { font-size: 28px; vertical-align: top; margin-top: 12px; color: var(--muted); }
+  .weather-desc {
+    font-size: 16px;
+    color: var(--muted);
+    margin-top: 6px;
+    margin-bottom: 16px;
+  }
+  .weather-meta {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .meta-item { background: var(--surface2); border-radius: 10px; padding: 10px 12px; }
+  .meta-item .mv { font-size: 14px; font-weight: 500; color: var(--text); }
+  .meta-item .mk { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .weather-icon-wrap { font-size: 80px; line-height: 1; opacity: 0.9; }
+
+  /* FORECAST */
+  .forecast-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .fc-day {
+    background: var(--surface2);
+    border-radius: 14px;
+    padding: 20px 10px;
+    text-align: center;
+  }
+  .fc-day .day { font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 12px; }
+  .fc-day .icon { font-size: 36px; margin-bottom: 12px; line-height: 1; }
+  .fc-day .hi { font-size: 18px; font-weight: 500; color: var(--text); }
+  .fc-day .lo { font-size: 14px; color: var(--muted); margin-top: 3px; }
+  .fc-bar {
+    height: 3px;
+    background: linear-gradient(90deg, #4f8ef7 0%, var(--gold) 100%);
+    border-radius: 2px;
+    margin: 10px 0 8px;
+    opacity: 0.5;
+  }
+
+  /* AQI */
+  .aqi-card {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: start;
+  }
+  .aqi-circle-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 8px 0 16px;
+  }
+  .aqi-circle {
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .aqi-num {
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .aqi-label-sm {
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .aqi-status {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 14px;
+  }
+  .aqi-bar-wrap { margin-bottom: 14px; }
+  .aqi-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #34d399 0%, #facc15 25%, #fb923c 50%, #f87171 72%, #c084fc 87%, #ef4444 100%);
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .aqi-pointer {
+    position: absolute;
+    top: -4px;
+    width: 4px; height: 16px;
+    background: #fff;
+    border-radius: 2px;
+    transform: translateX(-50%);
+    transition: left 0.8s ease;
+  }
+  .aqi-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .aqi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .aqi-stat { background: var(--surface2); border-radius: 10px; padding: 10px; }
+  .aqi-stat .ak { font-size: 11px; color: var(--muted); }
+  .aqi-stat .av { font-size: 14px; font-weight: 500; color: var(--text); margin-top: 3px; }
+
+  /* STOCKS */
+  .stocks-card {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .stock-tickers {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .ticker { background: var(--surface2); border-radius: 10px; padding: 10px 12px; }
+  .ticker .ts { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .ticker .tp { font-size: 14px; font-weight: 500; color: var(--text); margin: 3px 0; }
+  .ticker .tc { font-size: 12px; font-weight: 500; }
+  .tc.up { color: var(--green); }
+  .tc.dn { color: var(--red); }
+  .chart-wrap { position: relative; height: 140px; }
+
+  /* GOLD */
+  .gold-card {
+    grid-column: 1;
+    grid-row: 4;
+  }
+  .gold-top {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .gold-price {
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+  }
+  .gold-unit { font-size: 13px; color: var(--muted); }
+  .badge {
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+  .badge.up { background: rgba(52,211,153,0.15); color: var(--green); }
+  .badge.dn { background: rgba(248,113,113,0.15); color: var(--red); }
+  .gold-wrap { position: relative; height: 100px; margin-top: 12px; }
+
+  .loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .err { color: var(--red); font-size: 12px; margin-top: 8px; }
+
+  .updated { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 8px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .weather-main { grid-column: 1; grid-row: auto; }
+    #forecastCard { grid-column: 1 !important; grid-row: auto !important; }
+    .aqi-card { grid-column: 1; grid-row: auto; }
+    .stocks-card { grid-column: 1; grid-row: auto; }
+    .gold-card { grid-column: 1; grid-row: auto; }
+    .weather-meta { grid-template-columns: repeat(2, 1fr); }
+    .stock-tickers { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
 <body>
-    <h1>Hello World</h1>
+
+<div class="header">
+  <div>
+    <h1><span class="live-dot"></span>Bangkok Dashboard</h1>
+    <div class="sub" id="datetime"></div>
+  </div>
+  <button onclick="loadAll()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;">⟳ Refresh</button>
+</div>
+
+<div class="grid">
+
+  <!-- WEATHER BIG CARD -->
+  <div class="card weather-main" id="weatherCard">
+    <div class="card-label">Today · Bangkok</div>
+    <div id="weatherContent" class="loading">Loading weather…</div>
+  </div>
+
+  <!-- AQI CARD -->
+  <div class="card aqi-card" id="aqiCard">
+    <div class="card-label">Air Quality Index</div>
+    <div id="aqiContent" class="loading">Loading AQI…</div>
+  </div>
+
+  <!-- FORECAST CARD -->
+  <div class="card" id="forecastCard" style="grid-column:1; grid-row:2;">
+    <div class="card-label">5-Day Forecast</div>
+    <div id="forecastContent" class="loading">Loading forecast…</div>
+  </div>
+
+  <!-- STOCKS CARD -->
+  <div class="card stocks-card" id="stocksCard">
+    <div class="card-label">Thailand Stocks · SET Index</div>
+    <div id="stocksContent" class="loading">Loading stocks…</div>
+  </div>
+
+  <!-- GOLD CARD -->
+  <div class="card gold-card" id="goldCard">
+    <div class="card-label">Gold Price · Thailand (THB / baht weight)</div>
+    <div id="goldContent" class="loading">Loading gold price…</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const dayShort = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function updateClock() {
+  const now = new Date();
+  $('datetime').textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}  ·  ${now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function weatherIcon(code, isDay=1) {
+  if (code === 0) return isDay ? '☀️' : '🌙';
+  if (code <= 2) return isDay ? '⛅' : '🌥️';
+  if (code === 3) return '☁️';
+  if (code <= 49) return '🌫️';
+  if (code <= 57) return '🌦️';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '❄️';
+  if (code <= 82) return '🌦️';
+  if (code <= 86) return '🌨️';
+  if (code <= 99) return '⛈️';
+  return '🌤️';
+}
+function weatherDesc(code) {
+  if (code === 0) return 'Clear sky';
+  if (code === 1) return 'Mainly clear';
+  if (code === 2) return 'Partly cloudy';
+  if (code === 3) return 'Overcast';
+  if (code <= 49) return 'Foggy';
+  if (code <= 57) return 'Drizzle';
+  if (code <= 67) return 'Rain';
+  if (code <= 77) return 'Snow';
+  if (code <= 82) return 'Rain showers';
+  if (code <= 86) return 'Snow showers';
+  if (code <= 99) return 'Thunderstorm';
+  return 'Cloudy';
+}
+
+// ─── WEATHER ─────────────────────────────────────────────────────────────────
+// Bangkok coords: 13.7563° N, 100.5018° E
+async function loadWeather() {
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=13.7563&longitude=100.5018&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FBangkok&forecast_days=6';
+    const res = await fetch(url);
+    const d = await res.json();
+    const c = d.current;
+    const daily = d.daily;
+
+    // Main weather card
+    $('weatherContent').innerHTML = `
+      <div class="weather-top">
+        <div>
+          <div class="temp-big">${Math.round(c.temperature_2m)}<sup>°C</sup></div>
+          <div class="weather-desc">${weatherDesc(c.weather_code)}</div>
+        </div>
+        <div class="weather-icon-wrap">${weatherIcon(c.weather_code, c.is_day)}</div>
+      </div>
+      <div class="weather-meta">
+        <div class="meta-item"><div class="mv">${Math.round(c.apparent_temperature)}°C</div><div class="mk">Feels like</div></div>
+        <div class="meta-item"><div class="mv">${c.relative_humidity_2m}%</div><div class="mk">Humidity</div></div>
+        <div class="meta-item"><div class="mv">${Math.round(c.wind_speed_10m)} km/h</div><div class="mk">Wind</div></div>
+        <div class="meta-item"><div class="mv">${c.uv_index ?? '–'}</div><div class="mk">UV Index</div></div>
+      </div>
+      <div class="updated">Updated: ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+    `;
+
+    // Forecast card (skip today = index 0, take next 5)
+    const fcHTML = daily.time.slice(1,6).map((t, i) => {
+      const idx = i + 1;
+      const date = new Date(t);
+      return `<div class="fc-day">
+        <div class="day">${dayShort[date.getDay()]}</div>
+        <div class="icon">${weatherIcon(daily.weather_code[idx])}</div>
+        <div class="fc-bar"></div>
+        <div class="hi">${Math.round(daily.temperature_2m_max[idx])}°</div>
+        <div class="lo">${Math.round(daily.temperature_2m_min[idx])}°</div>
+      </div>`;
+    }).join('');
+    $('forecastContent').innerHTML = `<div class="forecast-row">${fcHTML}</div>`;
+
+  } catch(e) {
+    $('weatherContent').innerHTML = `<div class="err">Failed to load weather. Check internet connection.<br>${e.message}</div>`;
+    $('forecastContent').innerHTML = `<div class="err">Failed to load forecast.</div>`;
+  }
+}
+
+// ─── AQI ─────────────────────────────────────────────────────────────────────
+// Open-Meteo Air Quality API – free, no key needed
+async function loadAQI() {
+  try {
+    const url = 'https://air-quality-api.open-meteo.com/v1/air-quality?latitude=13.7563&longitude=100.5018&current=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,european_aqi&timezone=Asia%2FBangkok';
+    const res = await fetch(url);
+    const d = await res.json();
+    const c = d.current;
+    const aqi = Math.round(c.european_aqi ?? 0);
+
+    let color, label;
+    if (aqi <= 20) { color = '#34d399'; label = 'Good'; }
+    else if (aqi <= 40) { color = '#34d399'; label = 'Fair'; }
+    else if (aqi <= 60) { color = '#facc15'; label = 'Moderate'; }
+    else if (aqi <= 80) { color = '#fb923c'; label = 'Poor'; }
+    else if (aqi <= 100) { color = '#f87171'; label = 'Very Poor'; }
+    else { color = '#c084fc'; label = 'Extremely Poor'; }
+
+    // pointer position 0-500 mapped to 0-100%
+    const pct = Math.min(aqi / 100 * 100, 98);
+
+    $('aqiContent').innerHTML = `
+      <div class="aqi-circle-wrap">
+        <div class="aqi-circle" style="background:${color}22; border: 2px solid ${color}55;">
+          <span class="aqi-num" style="color:${color}">${aqi}</span>
+          <span class="aqi-label-sm" style="color:${color}">AQI</span>
+        </div>
+      </div>
+      <div class="aqi-status" style="color:${color}">${label}</div>
+      <div class="aqi-bar-wrap">
+        <div class="aqi-bar">
+          <div class="aqi-pointer" style="left:${pct}%"></div>
+        </div>
+        <div class="aqi-scale"><span>Good</span><span>Poor</span><span>Hazardous</span></div>
+      </div>
+      <div class="aqi-grid">
+        <div class="aqi-stat"><div class="ak">PM2.5</div><div class="av">${c.pm2_5?.toFixed(1) ?? '–'} µg/m³</div></div>
+        <div class="aqi-stat"><div class="ak">PM10</div><div class="av">${c.pm10?.toFixed(1) ?? '–'} µg/m³</div></div>
+        <div class="aqi-stat"><div class="ak">NO₂</div><div class="av">${c.nitrogen_dioxide?.toFixed(3) ?? '–'} ppm</div></div>
+        <div class="aqi-stat"><div class="ak">O₃</div><div class="av">${c.ozone?.toFixed(3) ?? '–'} ppm</div></div>
+      </div>
+      <div class="updated">Updated: ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+    `;
+  } catch(e) {
+    $('aqiContent').innerHTML = `<div class="err">Failed to load AQI data.<br>${e.message}</div>`;
+  }
+}
+
+// ─── STOCKS & GOLD ───────────────────────────────────────────────────────────
+let stockChart = null, goldChart = null;
+
+// ── SET Market Hours (ICT = UTC+7) ──────────────────────────────────────────
+// Morning session: 10:00–12:30, Afternoon session: 14:30–17:00, Mon–Fri
+function getSETMarketState() {
+  const now = new Date();
+  // Convert to ICT (UTC+7)
+  const ict = new Date(now.getTime() + (7 * 60 - now.getTimezoneOffset()) * 60000);
+  const dow = ict.getDay(); // 0=Sun, 6=Sat
+  const hhmm = ict.getHours() * 100 + ict.getMinutes();
+
+  const isWeekday = dow >= 1 && dow <= 5;
+  const inMorning   = hhmm >= 1000 && hhmm < 1230;
+  const inAfternoon = hhmm >= 1430 && hhmm < 1700;
+  const isOpen = isWeekday && (inMorning || inAfternoon);
+
+  // Compute next open time
+  let nextOpen = new Date(ict);
+  if (isOpen) {
+    nextOpen = null; // already open
+  } else {
+    // Find next weekday 10:00 ICT
+    nextOpen.setSeconds(0); nextOpen.setMilliseconds(0);
+    if (isWeekday && hhmm < 1000) {
+      nextOpen.setHours(10); nextOpen.setMinutes(0);
+    } else if (isWeekday && hhmm >= 1230 && hhmm < 1430) {
+      nextOpen.setHours(14); nextOpen.setMinutes(30);
+    } else {
+      // After close or weekend – advance to next Monday (or next day if weekday after close)
+      do {
+        nextOpen.setDate(nextOpen.getDate() + 1);
+      } while (nextOpen.getDay() === 0 || nextOpen.getDay() === 6);
+      nextOpen.setHours(10); nextOpen.setMinutes(0);
+    }
+  }
+
+  // Label for chart subtitle
+  let stateLabel, stateColor, chartMode;
+  if (isOpen) {
+    stateLabel = 'Market open · live intraday';
+    stateColor = '#34d399';
+    chartMode = 'intraday';
+  } else if (isWeekday && hhmm >= 1000) {
+    stateLabel = 'Market closed · showing today\'s session';
+    stateColor = '#7a7f94';
+    chartMode = 'today';
+  } else {
+    stateLabel = null; // will use "pre-open" message
+    stateColor = '#fb923c';
+    chartMode = 'preopen';
+  }
+
+  return { isOpen, chartMode, stateLabel, stateColor, nextOpen, ict };
+}
+
+function formatICT(date) {
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+}
+function formatDateICT(date) {
+  const d = new Date(date.getTime());
+  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Bangkok' });
+}
+
+async function fetchYahoo(symbol, interval, range) {
+  // Try multiple proxy + host combinations for reliability
+  const sym = encodeURIComponent(symbol);
+  const yahooUrl1 = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=${interval}&range=${range}&includePrePost=false`;
+  const yahooUrl2 = `https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=${interval}&range=${range}&includePrePost=false`;
+
+  const attempts = [
+    `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl1)}`,
+    `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl2)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl1)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl2)}`,
+  ];
+
+  let lastErr;
+  for (const proxyUrl of attempts) {
+    try {
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(9000) });
+      if (!res.ok) continue;
+      const raw = await res.text();
+      let parsed;
+      try {
+        const wrapper = JSON.parse(raw);
+        if (wrapper && typeof wrapper.contents === 'string') {
+          parsed = JSON.parse(wrapper.contents);
+        } else if (wrapper && wrapper.chart) {
+          parsed = wrapper;
+        } else {
+          continue;
+        }
+      } catch(_) { continue; }
+      const result = parsed?.chart?.result?.[0];
+      if (!result) continue;
+      const quotes = result.indicators?.quote?.[0];
+      if (!quotes) continue;
+      return {
+        closes: quotes.close || [],
+        opens:  quotes.open  || [],
+        timestamps: result.timestamp || [],
+        meta: result.meta || {}
+      };
+    } catch(e) { lastErr = e; }
+  }
+  throw new Error(lastErr?.message || `All proxies failed for ${symbol}`);
+}
+
+async function loadStocks() {
+  const symbols = [
+    { sym: '^SET',     label: 'SET',   fmt: v => v?.toFixed(2) },
+    { sym: 'PTT.BK',   label: 'PTT',   fmt: v => v?.toFixed(2) + ' ฿' },
+    { sym: 'KBANK.BK', label: 'KBANK', fmt: v => v?.toFixed(2) + ' ฿' },
+    { sym: 'AOT.BK',   label: 'AOT',   fmt: v => v?.toFixed(2) + ' ฿' },
+  ];
+  const colors = ['#4f8ef7','#34d399','#f87171','#c084fc'];
+
+  const { isOpen, chartMode, stateLabel, stateColor, nextOpen, ict } = getSETMarketState();
+
+  // ── PRE-OPEN: show message only ───────────────────────────────────────────
+  if (chartMode === 'preopen') {
+    // Still fetch daily data for ticker prices (last close)
+    let tickerHTML = '';
+    try {
+      const results = await Promise.all(symbols.map(s => fetchYahoo(s.sym, '1d', '5d').catch(() => null)));
+      tickerHTML = results.map((r, i) => {
+        if (!r) return `<div class="ticker"><div class="ts">${symbols[i].label}</div><div class="tp" style="color:var(--muted)">–</div></div>`;
+        const closes = r.closes.filter(Boolean);
+        const last = closes.at(-1);
+        const prev = closes.at(-2) || last;
+        const chg = (last - prev) / prev * 100;
+        const cls = chg >= 0 ? 'up' : 'dn';
+        const sign = chg >= 0 ? '+' : '';
+        return `<div class="ticker">
+          <div class="ts">${symbols[i].label}</div>
+          <div class="tp">${symbols[i].fmt(last)}</div>
+          <div class="tc ${cls}">${sign}${chg.toFixed(2)}%</div>
+        </div>`;
+      }).join('');
+    } catch(_) {}
+
+    const nextOpenStr = nextOpen
+      ? `${formatDateICT(nextOpen)} at ${formatICT(nextOpen)}`
+      : '–';
+
+    $('stocksContent').innerHTML = `
+      <div class="stock-tickers">${tickerHTML}</div>
+      <div style="margin-top:12px;background:var(--surface2);border-radius:12px;padding:20px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:10px;">🔒</div>
+        <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px;">SET Market is Closed</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;">
+          The Stock Exchange of Thailand (SET) is not yet open.<br>
+          <span style="color:#fb923c;font-weight:500;">Next session opens: ${nextOpenStr} (ICT)</span>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--muted);">
+          Trading hours: Mon–Fri · Morning 10:00–12:30 · Afternoon 14:30–17:00
+        </div>
+      </div>
+      <div class="updated">Checked: ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+    `;
+    if (stockChart) { stockChart.destroy(); stockChart = null; }
+    return;
+  }
+
+  // ── OPEN or CLOSED-TODAY: fetch intraday (5m or 1m) ──────────────────────
+  const interval = isOpen ? '5m' : '5m';
+  const range    = '1d';  // just today
+
+  try {
+    const results = await Promise.all(symbols.map(s => fetchYahoo(s.sym, interval, range).catch(() => null)));
+
+    // Ticker summary using latest available price
+    const tickerHTML = results.map((r, i) => {
+      if (!r) return `<div class="ticker"><div class="ts">${symbols[i].label}</div><div class="tp" style="color:var(--muted)">–</div></div>`;
+      const closes = r.closes.filter(Boolean);
+      if (!closes.length) return `<div class="ticker"><div class="ts">${symbols[i].label}</div><div class="tp" style="color:var(--muted)">–</div></div>`;
+      const last = closes.at(-1);
+      const first = closes[0];
+      const chg = (last - first) / first * 100;
+      const cls = chg >= 0 ? 'up' : 'dn';
+      const sign = chg >= 0 ? '+' : '';
+      return `<div class="ticker">
+        <div class="ts">${symbols[i].label}</div>
+        <div class="tp">${symbols[i].fmt(last)}</div>
+        <div class="tc ${cls}">${sign}${chg.toFixed(2)}%</div>
+      </div>`;
+    }).join('');
+
+    // Chart subtitle
+    const baseResult = results.find(Boolean);
+    const chartTitle = isOpen
+      ? `Intraday · 5-min intervals · <span style="color:${stateColor}">${stateLabel}</span>`
+      : `Today's session (closed) · 5-min intervals · <span style="color:${stateColor}">${stateLabel}</span>`;
+
+    $('stocksContent').innerHTML = `
+      <div class="stock-tickers">${tickerHTML}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${chartTitle}</div>
+      <div class="chart-wrap"><canvas id="stockChart"></canvas></div>
+      <div class="updated">Updated: ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+    `;
+
+    // Build datasets – normalize to % change from session open
+    const datasets = results.map((r, i) => {
+      if (!r || !r.closes.length) return null;
+      const data = r.closes.map(v => {
+        if (v == null) return null;
+        const first = r.closes.find(x => x != null);
+        return ((v - first) / first * 100);
+      });
+      return {
+        label: symbols[i].label,
+        data,
+        borderColor: colors[i],
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        pointRadius: 0,
+        borderWidth: 2,
+        spanGaps: true
+      };
+    }).filter(Boolean);
+
+    // X-axis labels: time of day in ICT
+    const labels = baseResult ? baseResult.timestamps.map(ts => {
+      const d = new Date(ts * 1000);
+      return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+    }) : [];
+
+    if (stockChart) stockChart.destroy();
+    stockChart = new Chart(document.getElementById('stockChart'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top',
+            labels: { color: '#7a7f94', font: { family: 'DM Sans', size: 11 }, boxWidth: 12, boxHeight: 2, padding: 12 }
+          },
+          tooltip: {
+            mode: 'index', intersect: false,
+            backgroundColor: '#1e2028', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+            titleColor: '#7a7f94', bodyColor: '#f0f2f7',
+            callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y >= 0 ? '+' : ''}${ctx.parsed.y?.toFixed(2)}%` }
+          }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7a7f94', font: { size: 10 }, maxTicksLimit: 8 }, border: { display: false } },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#7a7f94', font: { size: 10 }, callback: v => (v >= 0 ? '+' : '') + v.toFixed(1)+'%' },
+            border: { display: false }
+          }
+        }
+      }
+    });
+
+  } catch(e) {
+    $('stocksContent').innerHTML = `<div class="err">Failed to load stock data. This may be due to CORS restrictions or Yahoo Finance rate limits. Try refreshing.<br>${e.message}</div>`;
+  }
+}
+
+async function loadGold() {
+  // Strategy:
+  //   1. Try GOLD.BK (Thai gold ETF, already in THB) — most reliable, no FX conversion needed
+  //   2. Try GC=F (Gold Futures USD/oz) + USDTHB=X for FX conversion as fallback
+  //   3. Try GLD (SPDR Gold ETF USD) + FX as second fallback
+  // 1 baht_weight = 15.244g, 1 troy_oz = 31.1035g, GOLD.BK unit ≈ 0.1 baht-weight
+  const GRAM_PER_OZ   = 31.1035;
+  const BAHT_WEIGHT_G = 15.244;
+  const ratio         = BAHT_WEIGHT_G / GRAM_PER_OZ;  // oz -> baht-weight factor
+
+  let thbPrices = null;
+  let timestamps = null;
+  let sourceLabel = '';
+
+  // ── Attempt 1: GOLD.BK (Thai ETF, 1 unit = 0.1 baht-weight of 96.5% gold)
+  try {
+    const r = await fetchYahoo('GOLD.BK', '1d', '3mo');
+    if (r && r.closes.filter(Boolean).length > 5) {
+      // GOLD.BK price per unit → multiply by 10 to get price per baht-weight
+      thbPrices  = r.closes.map(v => v != null ? v * 10 : null);
+      timestamps = r.timestamps;
+      sourceLabel = 'GOLD.BK ETF (SET) · 3-month trend';
+    }
+  } catch(_) {}
+
+  // ── Attempt 2: GC=F futures + USDTHB
+  if (!thbPrices) {
+    try {
+      const [goldRes, fxRes] = await Promise.allSettled([
+        fetchYahoo('GC=F',     '1d', '3mo'),
+        fetchYahoo('USDTHB=X', '1d', '3mo')
+      ]);
+      const g = goldRes.status  === 'fulfilled' ? goldRes.value  : null;
+      const f = fxRes.status    === 'fulfilled' ? fxRes.value    : null;
+      if (g && g.closes.filter(Boolean).length > 5) {
+        const fxArr = f ? f.closes : [];
+        // Find a single recent FX rate as fallback
+        const fallbackFx = fxArr.filter(Boolean).at(-1) || 35.5;
+        thbPrices  = g.closes.map((v, i) => {
+          if (v == null) return null;
+          const fx = fxArr[i] != null ? fxArr[i] : fallbackFx;
+          return v * ratio * fx;
+        });
+        timestamps = g.timestamps;
+        sourceLabel = 'Gold futures XAU/USD → THB · 3-month trend';
+      }
+    } catch(_) {}
+  }
+
+  // ── Attempt 3: GLD ETF + FX
+  if (!thbPrices) {
+    try {
+      const [goldRes, fxRes] = await Promise.allSettled([
+        fetchYahoo('GLD',      '1d', '3mo'),
+        fetchYahoo('USDTHB=X', '1d', '3mo')
+      ]);
+      const g = goldRes.status === 'fulfilled' ? goldRes.value : null;
+      const f = fxRes.status   === 'fulfilled' ? fxRes.value   : null;
+      if (g && g.closes.filter(Boolean).length > 5) {
+        // GLD ≈ 1/10 troy oz per share, so price * 10 * ratio = THB/baht-weight
+        const fxArr = f ? f.closes : [];
+        const fallbackFx = fxArr.filter(Boolean).at(-1) || 35.5;
+        thbPrices  = g.closes.map((v, i) => {
+          if (v == null) return null;
+          const fx = fxArr[i] != null ? fxArr[i] : fallbackFx;
+          return v * 10 * ratio * fx;
+        });
+        timestamps = g.timestamps;
+        sourceLabel = 'GLD ETF (approx) → THB · 3-month trend';
+      }
+    } catch(_) {}
+  }
+
+  if (!thbPrices) {
+    $('goldContent').innerHTML = `<div class="err">Could not load gold price data from any source. Please check your internet connection and try refreshing.</div>`;
+    return;
+  }
+
+  try {
+    const validPrices = thbPrices.filter(Boolean);
+    const last = validPrices.at(-1);
+    const prev = validPrices.at(-2) || last;
+    const chg  = ((last - prev) / prev * 100);
+    const sign = chg >= 0 ? '+' : '';
+    const cls  = chg >= 0 ? 'up' : 'dn';
+
+    const labels = timestamps.map(ts => {
+      const d = new Date(ts * 1000);
+      return `${d.getDate()} ${months[d.getMonth()]}`;
+    });
+
+    $('goldContent').innerHTML = `
+      <div class="gold-top">
+        <span class="gold-price">฿${Math.round(last).toLocaleString()}</span>
+        <span class="gold-unit">/ baht weight (96.5%)</span>
+        <span class="badge ${cls}">${sign}${chg.toFixed(2)}%</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">${sourceLabel}</div>
+      <div class="gold-wrap"><canvas id="goldChart"></canvas></div>
+      <div class="updated">Updated: ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+    `;
+
+    if (goldChart) goldChart.destroy();
+    goldChart = new Chart(document.getElementById('goldChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: thbPrices,
+          borderColor: '#f0b429',
+          backgroundColor: 'rgba(240,180,41,0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2,
+          spanGaps: true
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1e2028', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+            titleColor: '#7a7f94', bodyColor: '#f0f2f7',
+            callbacks: { label: ctx => `฿${Math.round(ctx.parsed.y).toLocaleString()}` }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#7a7f94', font: { size: 10 }, maxTicksLimit: 6 }, border: { display: false } },
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7a7f94', font: { size: 10 }, callback: v => '฿'+(v/1000).toFixed(0)+'K' }, border: { display: false } }
+        }
+      }
+    });
+  } catch(e) {
+    $('goldContent').innerHTML = `<div class="err">Failed to render gold chart.<br>${e.message}</div>`;
+  }
+}
+
+loadAll();
+
+// Auto-refresh every 10 minutes
+setInterval(loadAll, 10 * 60 * 1000);
+</script>
 </body>
 </html>
